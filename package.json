@@ -1,0 +1,67 @@
+{
+  "name": "dot.paths",
+  "version": "0.1.0",
+  "description": "Fast, type-safe dot-notation path types for TypeScript: enumerate every path into a type (Paths) and resolve the value at any path (Get), tuned for compiler performance.",
+  "keywords": [
+    "typescript",
+    "types",
+    "type-level",
+    "dot-notation",
+    "dot-path",
+    "paths",
+    "keypath",
+    "nested",
+    "deep",
+    "autocomplete",
+    "type-safe",
+    "utility-types"
+  ],
+  "homepage": "https://github.com/TurtIeSocks/dot.paths#readme",
+  "bugs": {
+    "url": "https://github.com/TurtIeSocks/dot.paths/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TurtIeSocks/dot.paths.git"
+  },
+  "author": "Rin",
+  "license": "MIT",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "typecheck": "tsc --noEmit",
+    "test": "tsc --noEmit",
+    "lint": "biome check src test",
+    "format": "biome format --write src test",
+    "typeperf": "node bench/typeperf.mjs",
+    "typeperf:save": "node bench/typeperf.mjs --save",
+    "typeperf:ab": "node bench/typeperf-ab.mjs",
+    "typeperf:gen": "node bench/gen-fixtures.mjs",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@10.30.1",
+  "publishConfig": {
+    "access": "public"
+  }
+}

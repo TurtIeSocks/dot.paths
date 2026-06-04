@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# dot.paths: generated benchmark fixtures (run `pnpm typeperf:gen`) + harness temp config
+bench/fixtures.ts
+*.tmp.tsconfig.json

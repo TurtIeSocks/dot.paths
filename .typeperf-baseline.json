@@ -1,0 +1,30 @@
+{
+  "paths": {
+    "Types": "56034",
+    "Instantiations": "371692",
+    "Memory used": "186369K",
+    "Check time": "0.47s",
+    "Total time": "0.64s"
+  },
+  "get": {
+    "Types": "28332",
+    "Instantiations": "511156",
+    "Memory used": "176465K",
+    "Check time": "0.24s",
+    "Total time": "0.42s"
+  },
+  "combined": {
+    "Types": "59621",
+    "Instantiations": "1945486",
+    "Memory used": "382496K",
+    "Check time": "1.06s",
+    "Total time": "1.23s"
+  },
+  "recursive": {
+    "Types": "25423",
+    "Instantiations": "14167",
+    "Memory used": "130224K",
+    "Check time": "1.66s",
+    "Total time": "1.82s"
+  }
+}

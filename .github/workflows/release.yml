@@ -1,0 +1,51 @@
+name: Release
+
+# Publishes to npm when a GitHub Release is published.
+# Setup required (one-time):
+#   1. Create an npm automation/granular access token with publish rights.
+#   2. Add it as the repo secret `NPM_TOKEN` (Settings → Secrets → Actions).
+#   3. To cut a release: bump "version" in package.json, tag it, and publish a
+#      GitHub Release for that tag.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance (public repos only)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4 # version is read from package.json "packageManager"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Gate the publish on the same checks as CI.
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm run build
+
+      # `--provenance` attests the build on public repos; drop it if the repo
+      # is private. `prepublishOnly` rebuilds as a safety net for manual runs.
+      - name: Publish to npm
+        run: pnpm publish --no-git-checks --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
