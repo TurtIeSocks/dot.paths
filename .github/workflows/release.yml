@@ -1,18 +1,29 @@
 name: Release
 
-# Publishes to npm when a GitHub Release is published.
-# Setup required (one-time):
-#   1. Create an npm automation/granular access token with publish rights.
-#   2. Add it as the repo secret `NPM_TOKEN` (Settings → Secrets → Actions).
-#   3. To cut a release: bump "version" in package.json, tag it, and publish a
-#      GitHub Release for that tag.
+# Publishes to npm via TRUSTED PUBLISHING (OIDC) when a GitHub Release is
+# published — no npm token, no secret to rotate. Provenance is attested
+# automatically.
+#
+# One-time setup (npm can't trust-publish a package that doesn't exist yet):
+#   1. Publish v1 ONCE to create the package — easiest from your machine:
+#        npm login && npm publish        (prepublishOnly runs the build)
+#   2. npmjs.com → the package → Settings → Trusted Publisher → add
+#      GitHub Actions: repo `TurtIeSocks/dot.paths`, workflow `release.yml`.
+#   3. After that, every GitHub Release runs this workflow and publishes via
+#      OIDC. Cut a release: bump "version" in package.json, tag, publish a
+#      GitHub Release for the tag.
+#
+# Requirements (already met below): Node >= 22 + npm >= 11.5.1 (Node 24 ships
+# it) and pnpm 10.x — pnpm fetches the OIDC token + provenance itself. NOTE:
+# pnpm 11 currently has an OIDC publish regression (pnpm/pnpm#11513), so stay on
+# the pinned pnpm 10.x in package.json "packageManager".
 on:
   release:
     types: [published]
 
 permissions:
   contents: read
-  id-token: write # required for npm provenance (public repos only)
+  id-token: write # lets pnpm exchange the GitHub OIDC token with npm (auth + provenance)
 
 jobs:
   publish:
@@ -26,7 +37,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24 # >= 22 required for OIDC; 24 LTS ships npm >= 11.5.1
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
@@ -43,9 +54,7 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # `--provenance` attests the build on public repos; drop it if the repo
-      # is private. `prepublishOnly` rebuilds as a safety net for manual runs.
-      - name: Publish to npm
+      # No NODE_AUTH_TOKEN: with `id-token: write` set, pnpm authenticates via
+      # OIDC trusted publishing and attaches provenance automatically.
+      - name: Publish to npm (OIDC trusted publishing)
         run: pnpm publish --no-git-checks --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
