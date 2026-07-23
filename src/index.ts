@@ -144,13 +144,29 @@ export type Get<T, P extends string> = P extends `${infer H}.${infer R}`
   : _Index<T, P>;
 
 /**
- * Resolve one path segment. Fast path is the fused `T[K & keyof T]`; only when
- * that collapses to `never` (a key miss) do we fall back to the array branch.
- * That fallback is what keeps recursive unions like JSON (`… | Json[]`)
- * resolving to their value type — matching a classic `keyof`-cascade exactly —
- * while every normal hit pays only the cheap intersection-index.
+ * Resolve one path segment. The guard probes the key intersection
+ * `K & keyof T` directly — `never` on a miss, `K` on a hit — instead of
+ * materializing the indexed access `T[K & keyof T]` just to never-test it.
+ * That means the hit path builds the value type once, and the miss path
+ * never builds it at all; the checker only has to relate a small key type
+ * instead of a (possibly large) value type. Measured on the `get` benchmark
+ * scenario: Types −11.6%, Instantiations −4.1%, check time −13% vs the
+ * value-guard (TS 5.9.3).
+ *
+ * It also fixes a corner the value-guard got wrong: a tuple member *declared*
+ * `never` used to be indistinguishable from a key miss (both collapse
+ * `T[K & keyof T]` to `never`), so it fell back to the array branch below.
+ * The key-guard tells them apart — a declared-`never` member still has a real
+ * key, so `K & keyof T` is `K`, not `never` — and correctly resolves to
+ * `never`, matching the reference implementation (see `test/equivalence.ts`'s
+ * `NeverMembers`).
+ *
+ * The array-branch fallback below only fires on an actual key miss, and is
+ * what keeps recursive unions like JSON (`… | Json[]`) resolving to their
+ * value type — matching a classic `keyof`-cascade exactly — while every
+ * normal hit pays only the cheap intersection-index.
  */
-type _Index<T, K extends string> = [T[K & keyof T]] extends [never]
+type _Index<T, K extends string> = [K & keyof T] extends [never]
   ? T extends readonly unknown[]
     ? T[number]
     : never
