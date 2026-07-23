@@ -19,7 +19,7 @@
  * Usage:
  *   npm run typeperf                      Run all scenarios (compare to baseline)
  *   npm run typeperf -- --only get        Run a single scenario
- *   npm run typeperf -- --runs 5          Average over 5 runs (default 3)
+ *   npm run typeperf -- --runs 5          Min over 5 runs (default 3)
  *   npm run typeperf -- --save            Save current results as baseline
  *   npm run typeperf -- --clear           Delete the saved baseline
  */
