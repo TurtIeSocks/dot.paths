@@ -69,12 +69,12 @@ These types are built to be cheap for `tsc`. Highlights from the included benchm
 
 | Workload              | Instantiations |    Check time |
 | --------------------- | -------------: | ------------: |
-| `Get` (resolution)    |          ~flat |      **−40%** |
+| `Get` (resolution)    |        **−5%** |      **−50%** |
 | `Paths` (enumeration) |       **−15%** |           −6% |
-| realistic round-trip  |        **−9%** |      **−40%** |
+| realistic round-trip  |       **−10%** |      **−40%** |
 | recursive types       |            −2% | no regression |
 
-The `Get` check-time win **grows with type size** (−40% at the benchmark's 2× scale, −57% at 3×), because the core trick — resolving a segment with a fused `T[K & keyof T]` indexed access — is far cheaper for the checker to relate than a `K extends keyof T` conditional.
+The `Get` check-time win **grows with type size** (−50% at the benchmark's 2× scale, −60% at 3×), because the core trick — resolving a segment by testing the key intersection `K & keyof T` against `never` — is far cheaper for the checker to relate than a `K extends keyof T` conditional, and never materializes the indexed-access value type on a miss.
 
 Correctness is locked: every optimization is proven type-identical to a frozen reference implementation across objects, arrays, tuples, optionals, nullable/discriminated unions, exotic leaves, and recursive types (including self-referential JSON maps) — see `test/equivalence.ts`.
 

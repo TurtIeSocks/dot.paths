@@ -176,6 +176,14 @@ interface FatHolder {
   fat: FatNode;
 }
 
+// Never-typed members: a tuple slot declared `never` must resolve to `never`,
+// not fall back to the array element union (the value-guard _Index bug).
+interface NeverMembers {
+  t: [never, string];
+  r: readonly [never, boolean];
+  p: { a: never; b: string };
+}
+
 // ── Assertions (fail to compile on any divergence) ───────
 type _Checks = [
   Expect<Agree<Flat>>,
@@ -246,9 +254,21 @@ type _GetSpot = [
   >,
 ];
 
+// Never-typed members: a tuple/object slot declared `never` must resolve to
+// `never`, not fall back to the array element union. Locks the divergence
+// the value-guard `_Index` had against the reference (`GetRef`).
+type _NeverLock = [
+  Expect<Equal<Get<NeverMembers, 't.0'>, GetRef<NeverMembers, 't.0'>>>,
+  Expect<Equal<Get<NeverMembers, 't.1'>, GetRef<NeverMembers, 't.1'>>>,
+  Expect<Equal<Get<NeverMembers, 'r.0'>, GetRef<NeverMembers, 'r.0'>>>,
+  Expect<Equal<Get<NeverMembers, 'p.a'>, GetRef<NeverMembers, 'p.a'>>>,
+  Expect<Equal<Get<NeverMembers, 'p.b'>, GetRef<NeverMembers, 'p.b'>>>,
+];
+
 // These exported casts force `tsc` to resolve both assert tuples — the real
 // gate, run via `npm test` (which is `tsc --noEmit`). If any `Expect<…>`
 // diverges, this file fails to compile. dotpaths is type-only, so the
 // type-check IS the test; there is nothing to assert at runtime.
 export const _checks = undefined as unknown as _Checks;
 export const _spot = undefined as unknown as _GetSpot;
+export const _neverLock = undefined as unknown as _NeverLock;

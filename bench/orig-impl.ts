@@ -51,3 +51,5 @@ export type GetOrig<T, P extends string> = P extends `${infer H}.${infer R}`
     : T extends readonly unknown[]
       ? T[number]
       : never;
+
+export type GetStrictOrig<T, P extends PathsOrig<T>> = GetOrig<T, P>;

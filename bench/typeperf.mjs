@@ -19,7 +19,7 @@
  * Usage:
  *   npm run typeperf                      Run all scenarios (compare to baseline)
  *   npm run typeperf -- --only get        Run a single scenario
- *   npm run typeperf -- --runs 5          Average over 5 runs (default 3)
+ *   npm run typeperf -- --runs 5          Min over 5 runs (default 3)
  *   npm run typeperf -- --save            Save current results as baseline
  *   npm run typeperf -- --clear           Delete the saved baseline
  */
@@ -36,6 +36,14 @@ const TSC = resolve(ROOT, 'node_modules', '.bin', 'tsc');
 const TMP_CONFIG = resolve(ROOT, '.typeperf.tmp.tsconfig.json');
 const FIXTURES = resolve(ROOT, 'bench', 'fixtures.ts');
 
+// Timers/memory are only comparable within one environment — stamp the
+// baseline with the node/TypeScript versions it was captured under so a
+// silent toolchain change doesn't read as a phantom perf win/loss.
+const TS_VERSION = JSON.parse(
+  readFileSync(resolve(ROOT, 'node_modules', 'typescript', 'package.json'), 'utf8')
+).version;
+const ENV_STAMP = { node: process.version, typescript: TS_VERSION };
+
 /** Generate the benchmark fixtures on demand if they don't exist yet. */
 function ensureFixtures() {
   if (existsSync(FIXTURES)) return;
@@ -51,6 +59,7 @@ const SCENARIOS = [
   { name: 'get', file: 'bench/get.scenario.ts' },
   { name: 'combined', file: 'bench/combined.scenario.ts' },
   { name: 'recursive', file: 'bench/recursive.scenario.ts' },
+  { name: 'getstrict', file: 'bench/getstrict.scenario.ts' },
 ];
 
 // Deterministic counters first, then noisy timers/memory.
@@ -229,6 +238,14 @@ const baseline = existsSync(BASELINE_PATH)
   ? JSON.parse(readFileSync(BASELINE_PATH, 'utf8'))
   : null;
 
+if (baseline?._env && (baseline._env.node !== ENV_STAMP.node || baseline._env.typescript !== ENV_STAMP.typescript)) {
+  console.log(
+    `⚠ baseline saved on node ${baseline._env.node} / TS ${baseline._env.typescript}, ` +
+      `current node ${ENV_STAMP.node} / TS ${ENV_STAMP.typescript} — timers and memory ` +
+      'are not comparable across environments; counters are.'
+  );
+}
+
 const results = {};
 try {
   for (const s of scenarios) {
@@ -243,7 +260,7 @@ console.log();
 
 if (wantSave) {
   // Merge into any existing baseline so `--only` saves don't wipe others.
-  const merged = { ...(baseline ?? {}), ...results };
+  const merged = { ...(baseline ?? {}), ...results, _env: ENV_STAMP };
   writeFileSync(BASELINE_PATH, `${JSON.stringify(merged, null, 2)}\n`);
   console.log(`Baseline saved → ${BASELINE_PATH}`);
 } else if (!baseline) {

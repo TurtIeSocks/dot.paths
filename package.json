@@ -49,6 +49,7 @@
     "typeperf": "node bench/typeperf.mjs",
     "typeperf:save": "node bench/typeperf.mjs --save",
     "typeperf:ab": "node bench/typeperf-ab.mjs",
+    "typeperf:ci": "node bench/typeperf-ci.mjs",
     "typeperf:gen": "node bench/gen-fixtures.mjs",
     "prepublishOnly": "pnpm run build"
   },

@@ -9,8 +9,8 @@
  * Output: bench/fixtures.ts
  *
  * Knobs (env or flags) let you scale the stress up/down:
- *   node scripts/gen-fixtures.mjs --scale 1     (default)
- *   node scripts/gen-fixtures.mjs --scale 2     (≈2× volume)
+ *   node bench/gen-fixtures.mjs --scale 2     (default)
+ *   node bench/gen-fixtures.mjs --scale 4     (≈2× volume)
  *
  * The generated file exports:
  *   - Big interfaces of escalating shape (wide, deep, matrix, arrays, sink).

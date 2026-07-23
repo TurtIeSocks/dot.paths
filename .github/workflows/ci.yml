@@ -30,5 +30,8 @@ jobs:
       - name: Typecheck (behavior gate — equivalence asserts)
         run: pnpm run test
 
+      - name: Type-perf gate (counter ratios vs frozen original)
+        run: pnpm run typeperf:ci
+
       - name: Build
         run: pnpm run build
