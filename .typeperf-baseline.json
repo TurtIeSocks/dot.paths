@@ -2,33 +2,40 @@
   "paths": {
     "Types": "56045",
     "Instantiations": "371981",
-    "Memory used": "76429K",
-    "Check time": "0.58s",
-    "Total time": "0.64s"
+    "Memory used": "90599K",
+    "Check time": "0.59s",
+    "Total time": "0.67s"
   },
   "get": {
     "Types": "25071",
     "Instantiations": "490611",
-    "Memory used": "69971K",
+    "Memory used": "69748K",
     "Check time": "0.20s",
     "Total time": "0.27s"
   },
   "combined": {
     "Types": "56362",
     "Instantiations": "1907790",
-    "Memory used": "135284K",
-    "Check time": "1.05s",
-    "Total time": "1.11s"
+    "Memory used": "151252K",
+    "Check time": "1.03s",
+    "Total time": "1.10s"
   },
   "recursive": {
     "Types": "25446",
     "Instantiations": "14459",
-    "Memory used": "69286K",
-    "Check time": "1.91s",
-    "Total time": "1.96s"
+    "Memory used": "70214K",
+    "Check time": "1.90s",
+    "Total time": "1.95s"
   },
   "_env": {
     "node": "v26.4.0",
     "typescript": "5.9.3"
+  },
+  "getstrict": {
+    "Types": "55470",
+    "Instantiations": "1763464",
+    "Memory used": "118462K",
+    "Check time": "0.95s",
+    "Total time": "1.02s"
   }
 }
