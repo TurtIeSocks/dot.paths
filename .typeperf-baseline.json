@@ -2,9 +2,9 @@
   "paths": {
     "Types": "56045",
     "Instantiations": "371981",
-    "Memory used": "86777K",
-    "Check time": "0.56s",
-    "Total time": "0.63s"
+    "Memory used": "76429K",
+    "Check time": "0.58s",
+    "Total time": "0.64s"
   },
   "get": {
     "Types": "25071",
@@ -26,5 +26,9 @@
     "Memory used": "69286K",
     "Check time": "1.91s",
     "Total time": "1.96s"
+  },
+  "_env": {
+    "node": "v26.4.0",
+    "typescript": "5.9.3"
   }
 }
