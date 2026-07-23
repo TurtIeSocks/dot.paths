@@ -1,30 +1,30 @@
 {
   "paths": {
-    "Types": "56034",
-    "Instantiations": "371692",
-    "Memory used": "186369K",
-    "Check time": "0.47s",
-    "Total time": "0.64s"
+    "Types": "56045",
+    "Instantiations": "371981",
+    "Memory used": "86777K",
+    "Check time": "0.56s",
+    "Total time": "0.63s"
   },
   "get": {
-    "Types": "28332",
-    "Instantiations": "511156",
-    "Memory used": "176465K",
-    "Check time": "0.24s",
-    "Total time": "0.42s"
+    "Types": "25071",
+    "Instantiations": "490611",
+    "Memory used": "69971K",
+    "Check time": "0.20s",
+    "Total time": "0.27s"
   },
   "combined": {
-    "Types": "59621",
-    "Instantiations": "1945486",
-    "Memory used": "382496K",
-    "Check time": "1.06s",
-    "Total time": "1.23s"
+    "Types": "56362",
+    "Instantiations": "1907790",
+    "Memory used": "135284K",
+    "Check time": "1.05s",
+    "Total time": "1.11s"
   },
   "recursive": {
-    "Types": "25423",
-    "Instantiations": "14167",
-    "Memory used": "130224K",
-    "Check time": "1.66s",
-    "Total time": "1.82s"
+    "Types": "25446",
+    "Instantiations": "14459",
+    "Memory used": "69286K",
+    "Check time": "1.91s",
+    "Total time": "1.96s"
   }
 }
