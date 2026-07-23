@@ -1,0 +1,6 @@
+{
+  "paths": { "Types": 1.04, "Instantiations": 0.89 },
+  "get": { "Types": 1.05, "Instantiations": 0.99 },
+  "combined": { "Types": 1.04, "Instantiations": 0.93 },
+  "recursive": { "Types": 1.04, "Instantiations": 1.04 }
+}
