@@ -1,6 +1,6 @@
 {
   "name": "dot.paths",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fast, type-safe dot-notation path types for TypeScript: enumerate every path into a type (Paths) and resolve the value at any path (Get), tuned for compiler performance.",
   "keywords": [
     "typescript",
