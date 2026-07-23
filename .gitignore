@@ -145,3 +145,6 @@ vite.config.ts.timestamp-*
 # dot.paths: generated benchmark fixtures (run `pnpm typeperf:gen`) + harness temp config
 bench/fixtures.ts
 *.tmp.tsconfig.json
+
+# advisor scratch (improve-skill plans/backlog — kept locally, never shipped)
+plans/
