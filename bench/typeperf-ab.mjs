@@ -5,8 +5,9 @@
  * BACK-TO-BACK in the same process so the noisy `Check time` / `Total time`
  * metrics are compared under the same machine state.
  *
- * For each scenario pair we run N interleaved rounds — within a round we time
- * NEW then ORIG seconds apart — and report the MEDIAN of the per-round ratios
+ * For each scenario pair we run N interleaved rounds — order alternates each
+ * round (even rounds NEW→ORIG, odd rounds ORIG→NEW) so neither side is always
+ * the "warmer" second process — and report the MEDIAN of the per-round ratios
  * (new/orig). A ratio < 1.0 means the optimized impl is faster. Deterministic
  * counters (Types / Instantiations / Memory) are reported once.
  *
@@ -113,8 +114,18 @@ try {
     let newCounts;
     let origCounts;
     for (let r = 0; r < ROUNDS; r++) {
-      const n = run(p.neu);
-      const o = run(p.orig);
+      // Alternate order each round: even rounds NEW→ORIG, odd ORIG→NEW.
+      // A fixed order lets the second process always run warmer (file cache,
+      // CPU boost state) — a same-sign bias the median cannot cancel.
+      let n;
+      let o;
+      if (r % 2 === 0) {
+        n = run(p.neu);
+        o = run(p.orig);
+      } else {
+        o = run(p.orig);
+        n = run(p.neu);
+      }
       if (r === 0) {
         newCounts = n;
         origCounts = o;
