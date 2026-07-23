@@ -51,6 +51,11 @@ const PAIRS = [
     neu: 'recursive.scenario.ts',
     orig: 'recursive-orig.scenario.ts',
   },
+  {
+    name: 'getstrict',
+    neu: 'getstrict.scenario.ts',
+    orig: 'getstrict-orig.scenario.ts',
+  },
 ];
 
 const COUNTERS = ['Types', 'Instantiations', 'Memory used'];

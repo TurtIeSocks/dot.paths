@@ -51,6 +51,7 @@ const SCENARIOS = [
   { name: 'get', file: 'bench/get.scenario.ts' },
   { name: 'combined', file: 'bench/combined.scenario.ts' },
   { name: 'recursive', file: 'bench/recursive.scenario.ts' },
+  { name: 'getstrict', file: 'bench/getstrict.scenario.ts' },
 ];
 
 // Deterministic counters first, then noisy timers/memory.
