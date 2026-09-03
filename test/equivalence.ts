@@ -30,11 +30,20 @@ type _LeafRef =
   | null
   | undefined
   | ((...args: never[]) => unknown)
+  | Function
   | Date
   | RegExp
-  | Map<unknown, unknown>
-  | Set<unknown>
-  | Promise<unknown>;
+  | ReadonlyMap<unknown, unknown>
+  | ReadonlySet<unknown>
+  | WeakMap<object, unknown>
+  | WeakSet<object>
+  | WeakRef<object>
+  | Promise<unknown>
+  | ArrayBuffer
+  | SharedArrayBuffer
+  | ArrayBufferView
+  | String
+  | Number;
 
 type _JoinRef<H extends string, T> = [T] extends [never]
   ? never
@@ -45,9 +54,14 @@ type PathsRef<T, _D extends 0[] = []> = _D['length'] extends 8
   : T extends _LeafRef
     ? never
     : T extends readonly unknown[]
-      ?
-          | `${number}`
-          | _JoinRef<`${number}`, PathsRef<NonNullable<T[number]>, [..._D, 0]>>
+      ? T extends readonly []
+        ? never
+        :
+            | `${number}`
+            | _JoinRef<
+                `${number}`,
+                PathsRef<NonNullable<T[number]>, [..._D, 0]>
+              >
       : T extends object
         ?
             | {
@@ -62,21 +76,19 @@ type PathsRef<T, _D extends 0[] = []> = _D['length'] extends 8
               }[keyof T & number]
         : never;
 
-type GetRef<T, P extends string> = P extends `${infer H}.${infer R}`
-  ? H extends keyof T
-    ? GetRef<T[H], R>
-    : _ToNumRef<H> extends keyof T
-      ? GetRef<T[_ToNumRef<H>], R>
-      : T extends readonly unknown[]
-        ? GetRef<T[number], R>
+type GetRef<T, P extends string> = T extends unknown
+  ? P extends `${infer H}.${infer R}`
+    ? H extends keyof T
+      ? GetRef<T[H], R>
+      : _ToNumRef<H> extends keyof T
+        ? GetRef<T[_ToNumRef<H>], R>
         : never
-  : P extends keyof T
-    ? T[P]
-    : _ToNumRef<P> extends keyof T
-      ? T[_ToNumRef<P>]
-      : T extends readonly unknown[]
-        ? T[number]
-        : never;
+    : P extends keyof T
+      ? T[P]
+      : _ToNumRef<P> extends keyof T
+        ? T[_ToNumRef<P>]
+        : never
+  : never;
 // A numeric segment becomes its number; anything else passes through unchanged so
 // the `extends keyof T` test below simply fails again (never would pass it).
 type _ToNumRef<S> = S extends `${infer N extends number}` ? N : S;

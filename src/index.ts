@@ -1,12 +1,12 @@
 /**
- * dot.paths — fast, type-safe dot-notation path types for TypeScript.
+ * dot.paths: fast, type-safe dot-notation path types for TypeScript.
  *
- * - `Paths<T, Opts>`   — union of every valid dot-notation path into `T`.
- * - `Get<T, P>`        — value type at path `P` within `T` (loose `P`, fast).
- * - `GetStrict<T, P>`  — same, but `P` is constrained to `Paths<T>` for
+ * - `Paths<T, Opts>`: union of every valid dot-notation path into `T`.
+ * - `Get<T, P>`: value type at path `P` within `T` (loose `P`, fast).
+ * - `GetStrict<T, P>`: same, but `P` is constrained to `Paths<T>` for
  *                        autocomplete + invalid-path rejection (DX).
  *
- * Zero runtime, zero dependencies — these are pure type-level utilities tuned
+ * Zero runtime, zero dependencies: these are pure type-level utilities tuned
  * for compiler performance. See README for the benchmark methodology/results.
  */
 
@@ -14,7 +14,15 @@
 // Path enumeration
 // ==========================================
 
-/** Types that terminate path traversal — no further nesting possible. */
+/**
+ * Types that terminate path traversal. Past the primitives and callables the
+ * list is hand-picked: opaque runtime values whose members are methods, not
+ * data. `Function` also covers constructor types, so `typeof SomeClass` is a
+ * leaf. `ReadonlyMap` and `ReadonlySet` match `Map` and `Set` as well;
+ * `ArrayBufferView` covers every typed array and `DataView`. `T extends _Leaf`
+ * runs once per node; growing the list from 13 to 22 members measured +27
+ * instantiations on `paths`, nothing on check time.
+ */
 type _Leaf =
   | string
   | number
@@ -24,19 +32,28 @@ type _Leaf =
   | null
   | undefined
   | ((...args: never[]) => unknown)
+  | Function
   | Date
   | RegExp
-  | Map<unknown, unknown>
-  | Set<unknown>
-  | Promise<unknown>;
+  | ReadonlyMap<unknown, unknown>
+  | ReadonlySet<unknown>
+  | WeakMap<object, unknown>
+  | WeakSet<object>
+  | WeakRef<object>
+  | Promise<unknown>
+  | ArrayBuffer
+  | SharedArrayBuffer
+  | ArrayBufferView
+  | String
+  | Number;
 
 /**
  * One key's contribution to `Paths`: the key itself, plus every sub-path
  * joined under it with `.`. `K` may be a number (a numeric index signature or
  * a numeric literal key), which is why the bare key is `${K}` and not `K`.
  *
- * Both halves live in ONE alias on purpose. The obvious shape — `K | _Join<K,
- * Sub>` inside the mapped type, or the bare keys unioned in beside it — forms
+ * Both halves live in ONE alias on purpose. The obvious shape, `K | _Join<K,
+ * Sub>` inside the mapped type or the bare keys unioned in beside it, forms
  * a second union per object node, and every union that mixes string literals
  * with pattern templates (`${number}`, `${string}`) re-runs TypeScript's
  * literal-vs-template reduction over the whole subtree. On the `recursive`
@@ -67,7 +84,18 @@ type _Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
  * strings (`'0' | … | '16'`), `_ToNum` turns them into number literals, and `0`
  * is dropped (depth 0 = no paths).
  */
-type _ToNum<S> = S extends `${infer N extends number}` ? N : never;
+/**
+ * A segment as a number, only when it round-trips: `'7'` is `7` and
+ * `` `${number}` `` is `number`, but `'007'`, `'1e3'` and `' 1'` are `never`,
+ * since `` `${infer N extends number}` `` alone widens them to `number` and a
+ * miss would then resolve to every numerically keyed value. At runtime
+ * `obj['007']` is a different property from `obj[7]`, so a miss is right.
+ */
+type _ToNum<S> = S extends `${infer N extends number}`
+  ? `${N}` extends S
+    ? N
+    : never
+  : never;
 type _Depth = Exclude<_ToNum<Exclude<keyof _Prev, keyof unknown[]>>, 0>;
 
 /** Options accepted by {@link Paths}. */
@@ -90,29 +118,34 @@ export interface PathsOptions {
  * - No `T extends object` guard before the mapped type: after the leaf and
  *   array checks everything left is already an object, so the guard was dead
  *   weight (~13% of Paths instantiations on wide types).
- * - O(1) decrement depth guard (`_Prev[_D]`) — no per-level tuple-spread.
+ * - O(1) decrement depth guard (`_Prev[_D]`), no per-level tuple-spread.
  * - `NonNullable<T[K]>` is KEPT, deliberately. Dropping it lets the recursion
  *   distribute over nullable members (`FatNode | null`) at EVERY level; on
  *   deeply recursive nullable types that measured ~5% slower. Keeping it
- *   collapses the union once, up front — cheap on flat types, decisive on
+ *   collapses the union once, up front: cheap on flat types, decisive on
  *   recursive ones.
  * - Keys are mapped over `keyof T & (string | number)`, not `keyof T & string`.
  *   `number & string` is `never`, so numeric index signatures
  *   (`Record<number, V>`) and numeric literal keys (`{ 0: V }`) used to
  *   produce no paths at all. Widening the key domain itself is free (measured
  *   +0.1% instantiations); what costs is anything that adds a union member
- *   per node — see {@link _Entry}. A `number extends keyof T` conditional per
+ *   per node, see {@link _Entry}. A `number extends keyof T` conditional per
  *   node measured +47–60% check time on `recursive`, a second mapped type over
  *   `keyof T & number` +18% instantiations on `paths`. A string index
  *   signature makes `keyof T` = `string | number`; its `${number}` twin is
  *   absorbed by the `string` member of the same union.
+ * - An empty tuple has no element, so it yields no `${number}` slot. The
+ *   `T extends readonly []` check runs only on array nodes and measured +330
+ *   instantiations on `paths`.
  */
 type _Paths<T, _D extends number> = _D extends 0
   ? never
   : T extends _Leaf
     ? never
     : T extends readonly unknown[]
-      ? _Entry<number, _Paths<NonNullable<T[number]>, _Prev[_D]>>
+      ? T extends readonly []
+        ? never
+        : _Entry<number, _Paths<NonNullable<T[number]>, _Prev[_D]>>
       : {
           [K in keyof T & (string | number)]: _Entry<
             K,
@@ -141,14 +174,14 @@ export type Paths<T, Opts extends PathsOptions = {}> = _Paths<
 
 /**
  * Resolves the value type at dot-notation path `P` within `T`. `P` is loosely
- * typed (`string`) — fast, and the right primitive for internal use and
+ * typed (`string`): fast, and the right primitive for internal use and
  * one-off lookups. For path autocomplete / invalid-path errors at the call
  * site, use {@link GetStrict}.
  *
  * Performance notes:
  * - Per segment, `_Index` does the fused `T[K & keyof T]`: `K & keyof T` is `K`
  *   for a real key (→ `T[K]`) and `never` for a miss. The intersection is far
- *   cheaper for the checker to relate than a `K extends keyof T` conditional —
+ *   cheaper for the checker to relate than a `K extends keyof T` conditional,
  *   the win grows with type size (~−40% to −57% check time on the benchmark).
  * - Tail-recursive (`Get<…, R>` in tail position) → TypeScript TCO (4.5+),
  *   so arbitrarily deep paths don't hit the recursion limit.
@@ -162,45 +195,70 @@ export type Get<T, P extends string> = P extends `${infer H}.${infer R}`
   : _Index<T, P>;
 
 /**
- * Resolve one path segment. The guard probes the key intersection
- * `K & keyof T` directly — `never` on a miss, `K` on a hit — instead of
- * materializing the indexed access `T[K & keyof T]` just to never-test it.
- * That means the hit path builds the value type once, and the miss path
- * never builds it at all; the checker only has to relate a small key type
- * instead of a (possibly large) value type. Measured on the `get` benchmark
- * scenario: Types −11.6%, Instantiations −4.1%, check time −13% vs the
- * value-guard (TS 5.9.3).
+ * Resolve one path segment. The hit path probes the key intersection
+ * `K & keyof T` directly (`never` on a miss, `K` on a hit) instead of
+ * materializing the indexed access `T[K & keyof T]` just to never-test it, so
+ * a hit builds the value type once and the checker only relates a small key
+ * type. Measured on the `get` scenario against a value-guard: Types −11.6%,
+ * Instantiations −4.1%, check time −13% (TS 5.9.3). A tuple member *declared*
+ * `never` still has a real key, so it resolves to `never` rather than falling
+ * through (see `NeverMembers` in `test/equivalence.ts`).
  *
- * It also fixes a corner the value-guard got wrong: a tuple member *declared*
- * `never` used to be indistinguishable from a key miss (both collapse
- * `T[K & keyof T]` to `never`), so it fell back to the array branch below.
- * The key-guard tells them apart — a declared-`never` member still has a real
- * key, so `K & keyof T` is `K`, not `never` — and correctly resolves to
- * `never`, matching the reference implementation (see `test/equivalence.ts`'s
- * `NeverMembers`).
+ * A miss on the whole type hands over to {@link _IndexEach}, which retries per
+ * union member. `keyof (A | B)` is only the shared keys and `keyof (X | null)`
+ * is `never`, so without that step every path `Paths` enumerates through a
+ * nullable, optional or union member (`Partial<Record<K, V>>`, `(A | B)[]`,
+ * `[A?]`) resolved to `never`. Miss path only: distributing on the hit path as
+ * well measured +2.8% instantiations and +8% check time on `get`; this shape
+ * measured +0.4% and no check-time change. The distributing conditional has
+ * to be its own alias: nested inside another conditional's branch it does
+ * not distribute.
  *
- * The array-branch fallback below only fires on an actual key miss, and is
- * what keeps recursive unions like JSON (`… | Json[]`) resolving to their
- * value type — matching a classic `keyof`-cascade exactly — while every
- * normal hit pays only the cheap intersection-index.
- *
- * Numeric keys never intersect a string segment (`'7' & number` is `never`),
- * so on a miss the segment is retried as a number via `_ToNum`: `'7'` becomes
- * `7`, `` `${number}` `` becomes `number`. That resolves numeric index
- * signatures (`Record<number, V>`) and numeric literal keys (`{ 0: V }`),
- * which were both `never` before. Miss path only; a hit still pays a single
- * intersection-index, and the `get` scenario's counters did not move.
+ * There is no array-element fallback any more. It existed so `Json[] | {…}`
+ * kept resolving through `keyof` of the union; with per-member retry the
+ * object member resolves on its own, and the fallback only turned garbage
+ * segments into the element type (`Get<{ list: El[] }, 'list.first'>` was
+ * `El`, and `Get<{ u: V[] | { a: 1 } }, 'u.a'>` was `V`).
  */
 type _Index<T, K extends string> = [K & keyof T] extends [never]
-  ? [_ToNum<K> & keyof T] extends [never]
-    ? T extends readonly unknown[]
-      ? T[number]
-      : never
-    : T[_ToNum<K> & keyof T]
+  ? _IndexEach<T, K>
   : T[K & keyof T];
 
 /**
- * `Get`, but with `P` constrained to `Paths<T>` — enables path autocomplete
+ * Per-member retry for a segment that missed on the whole type. Assignability
+ * (`K extends keyof T`) rather than the intersection guard, because a wide
+ * `` `${string}` `` segment intersects every method name of a primitive or
+ * array member (`Get<Json[], `${string}`>` came back as fifty method types).
+ *
+ * `_ToNum` is guarded with a tuple check before it is used as an index:
+ * `T[never]` is not `never`, it falls into the index signature (`X[][never]`
+ * is `X`, `string[never]` is `string`). The `_StringKeyed` step is what makes
+ * enum-keyed records resolvable: `Paths` lists an enum member by its value
+ * (`'red'`), and neither `'red' & Color` nor `'red' extends Color` holds, so
+ * the keys are remapped to their string form. Object members only, since a
+ * primitive's `keyof` is fifty method names. Whole chain measured within
+ * noise on `get`, `combined` and `recursive`.
+ */
+type _IndexEach<T, K extends string> = T extends unknown
+  ? K extends keyof T
+    ? T[K]
+    : [_ToNum<K>] extends [never]
+      ? K extends `${number}`
+        ? never
+        : T extends object
+          ? K extends keyof _StringKeyed<T>
+            ? _StringKeyed<T>[K]
+            : never
+          : never
+      : _ToNum<K> extends keyof T
+        ? T[_ToNum<K>]
+        : never
+  : never;
+
+type _StringKeyed<T> = { [P in keyof T as `${P & (string | number)}`]: T[P] };
+
+/**
+ * `Get`, but with `P` constrained to `Paths<T>`, which enables path autocomplete
  * and rejects invalid paths at the call site. Delegates to the loose `Get`
  * (the constraint forces a `Paths<T>` computation, so reach for this at API
  * boundaries that want the DX, not in hot inner code).
