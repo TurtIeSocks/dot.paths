@@ -100,7 +100,7 @@ npm run typeperf:ab         # A/B the optimized impl vs a frozen original
 
 Known and pinned in `test/`, each a consequence of TypeScript's own rules rather than something the implementation can route around cheaply.
 
-- A string index signature at the root (`Paths<Record<string, V>>`) is exactly `string`, so `GetStrict` accepts any path there. Nested, `r.${string}` absorbs every deeper path, so `GetStrict<{ r: Record<string, V> }, 'r.a.b.c'>` compiles and resolves to `never`.
+- A string index signature at the root (`Paths<Record<string, V>>`) is exactly `string`, so `GetStrict` accepts any path there. Nested, `r.${string}` absorbs every deeper path, so `GetStrict<{ r: Record<string, V> }, 'r.a.b.c'>` always compiles: it resolves through the keys `V` has and to `never` past them.
 - A key containing `.` (a numeric key like `1.5` too) is listed by `Paths` and unresolvable by `Get`, which splits on the first dot.
 - A trailing dot resolves through a string index signature, because `''` is a valid key.
 - Tuples are addressed as `${number}`. An out-of-range literal index resolves to `undefined` and `GetStrict` accepts it. A wide `${number}` segment on a tuple with a rest element gives the fixed elements only; literal indices resolve the rest element.
