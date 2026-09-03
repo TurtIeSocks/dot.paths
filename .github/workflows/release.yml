@@ -14,9 +14,7 @@ name: Release
 #      GitHub Release for the tag.
 #
 # Requirements (already met below): Node >= 22 + npm >= 11.5.1 (Node 24 ships
-# it) and pnpm 10.x — pnpm fetches the OIDC token + provenance itself. NOTE:
-# pnpm 11 currently has an OIDC publish regression (pnpm/pnpm#11513), so stay on
-# the pinned pnpm 10.x in package.json "packageManager".
+# it). pnpm installs and builds; the publish itself goes through npm.
 on:
   release:
     types: [published]
@@ -59,7 +57,10 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # No NODE_AUTH_TOKEN: with `id-token: write` set, pnpm authenticates via
-      # OIDC trusted publishing and attaches provenance automatically.
+      # No NODE_AUTH_TOKEN: with `id-token: write` set, npm >= 11.5.1 exchanges
+      # the GitHub OIDC token for a publish token itself and attaches
+      # provenance. npm directly rather than pnpm publish, which is the shape
+      # npm documents for trusted publishing; verbose logging so an exchange
+      # failure (logged at verbose level only) shows up in the run.
       - name: Publish to npm (OIDC trusted publishing)
-        run: pnpm publish --no-git-checks --provenance --access public
+        run: npm publish --provenance --access public --loglevel verbose
