@@ -122,7 +122,7 @@ Known and pinned in `test/`, each a consequence of TypeScript's own rules rather
 - `any` is a wildcard: `Paths<any>` is `string`, and an `any` field emits `${string}` below it.
 - Loose `Get` resolves any structural member, including `length`, array methods and `Map.size`. `GetStrict` never offers them, except under `any`, where every path satisfies the constraint.
 - A wide `${string}` segment on loose `Get` gives the union of matching values on a plain object and the shared keys' values on a union, and `never` through a nullable object or a union with no shared keys. A string index signature resolves it either way.
-- `Get` resolves through optional and nullable members to the value type without `| undefined`, matching what `Paths` enumerates.
+- `Get` keeps `| undefined` or `| null` on an optional or nullable member itself, and drops it once a path continues through that member, matching what `Paths` enumerates below it.
 
 ## License
 
