@@ -91,7 +91,7 @@ npm run typeperf:ab         # A/B the optimized impl vs a frozen original
 
 ## How it works (the short version)
 
-- **`Paths`** gates on `T extends _Leaf` first (primitives — the common case — terminate in one cheap check), drops a redundant `T extends object` guard, uses an O(1) decrement for the depth counter, and keeps `NonNullable` per key (dropping it is faster on flat types but slower on recursive nullable ones).
+- **`Paths`** enumerates string keys, array elements as `${number}`, numeric index signatures (`Record<number, V>`) as `${number}` too, and numeric literal keys (`{ 0: V }`) as `"0"`; string index signatures stay `${string}` only. It gates on `T extends _Leaf` first (primitives — the common case — terminate in one cheap check), drops a redundant `T extends object` guard, uses an O(1) decrement for the depth counter, and keeps `NonNullable` per key (dropping it is faster on flat types but slower on recursive nullable ones).
 - **`Get`** is two branches: split on the first `.`, then resolve the segment with `_Index`. `_Index` is the fused `T[K & keyof T]`, with a fallback to the array element type that only fires on a key miss — which is exactly what keeps recursive unions like JSON resolving correctly while normal lookups stay fast.
 
 ## License

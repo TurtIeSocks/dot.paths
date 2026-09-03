@@ -31,18 +31,27 @@ type _Leaf =
   | Promise<unknown>;
 
 /**
- * Joins a head segment to a union of tail sub-paths with `.`, short-circuiting
- * to `never` when there are no sub-paths.
+ * One key's contribution to `Paths`: the key itself, plus every sub-path
+ * joined under it with `.`. `K` may be a number (a numeric index signature or
+ * a numeric literal key), which is why the bare key is `${K}` and not `K`.
  *
- * The `[T] extends [never]` guard is load-bearing for performance, not just
- * correctness: it lets leaf keys (whose sub-paths are `never`) bail out via a
- * cheap conditional INSTEAD of constructing a template literal that would only
- * collapse to `never` anyway. Dropping it measured ~6% slower (every leaf key
- * builds a throwaway template). The tuple wrapper also prevents distribution.
+ * Both halves live in ONE alias on purpose. The obvious shape — `K | _Join<K,
+ * Sub>` inside the mapped type, or the bare keys unioned in beside it — forms
+ * a second union per object node, and every union that mixes string literals
+ * with pattern templates (`${number}`, `${string}`) re-runs TypeScript's
+ * literal-vs-template reduction over the whole subtree. On the `recursive`
+ * benchmark that measured +28–60% check time for every such variant tried;
+ * folding the bare key into the join's own template keeps one union per node
+ * and measured −6.8% instantiations on `paths` against the old `_Join` shape.
+ *
+ * The `[Sub] extends [never]` guard is load-bearing for performance, not just
+ * correctness: leaf keys (whose sub-paths are `never`) bail out via a cheap
+ * conditional instead of building a join template that would only collapse
+ * anyway. The tuple wrapper also prevents distribution.
  */
-type _Join<H extends string, T> = [T] extends [never]
-  ? never
-  : `${H}.${T & string}`;
+type _Entry<K extends string | number, Sub> = [Sub] extends [never]
+  ? `${K}`
+  : `${K}` | `${K}.${Sub & string}`;
 
 /**
  * Decrement lookup for the recursion-depth guard (O(1) vs tuple-spread).
@@ -87,20 +96,29 @@ export interface PathsOptions {
  *   deeply recursive nullable types that measured ~5% slower. Keeping it
  *   collapses the union once, up front — cheap on flat types, decisive on
  *   recursive ones.
+ * - Keys are mapped over `keyof T & (string | number)`, not `keyof T & string`.
+ *   `number & string` is `never`, so numeric index signatures
+ *   (`Record<number, V>`) and numeric literal keys (`{ 0: V }`) used to
+ *   produce no paths at all. Widening the key domain itself is free (measured
+ *   +0.1% instantiations); what costs is anything that adds a union member
+ *   per node — see {@link _Entry}. A `number extends keyof T` conditional per
+ *   node measured +47–60% check time on `recursive`, a second mapped type over
+ *   `keyof T & number` +18% instantiations on `paths`. A string index
+ *   signature makes `keyof T` = `string | number`; its `${number}` twin is
+ *   absorbed by the `string` member of the same union.
  */
 type _Paths<T, _D extends number> = _D extends 0
   ? never
   : T extends _Leaf
     ? never
     : T extends readonly unknown[]
-      ?
-          | `${number}`
-          | _Join<`${number}`, _Paths<NonNullable<T[number]>, _Prev[_D]>>
+      ? _Entry<number, _Paths<NonNullable<T[number]>, _Prev[_D]>>
       : {
-          [K in keyof T & string]:
-            | K
-            | _Join<K, _Paths<NonNullable<T[K]>, _Prev[_D]>>;
-        }[keyof T & string];
+          [K in keyof T & (string | number)]: _Entry<
+            K,
+            _Paths<NonNullable<T[K]>, _Prev[_D]>
+          >;
+        }[keyof T & (string | number)];
 
 /**
  * Union of every valid dot-notation path into `T`, e.g.
@@ -165,11 +183,20 @@ export type Get<T, P extends string> = P extends `${infer H}.${infer R}`
  * what keeps recursive unions like JSON (`… | Json[]`) resolving to their
  * value type — matching a classic `keyof`-cascade exactly — while every
  * normal hit pays only the cheap intersection-index.
+ *
+ * Numeric keys never intersect a string segment (`'7' & number` is `never`),
+ * so on a miss the segment is retried as a number via `_ToNum`: `'7'` becomes
+ * `7`, `` `${number}` `` becomes `number`. That resolves numeric index
+ * signatures (`Record<number, V>`) and numeric literal keys (`{ 0: V }`),
+ * which were both `never` before. Miss path only; a hit still pays a single
+ * intersection-index, and the `get` scenario's counters did not move.
  */
 type _Index<T, K extends string> = [K & keyof T] extends [never]
-  ? T extends readonly unknown[]
-    ? T[number]
-    : never
+  ? [_ToNum<K> & keyof T] extends [never]
+    ? T extends readonly unknown[]
+      ? T[number]
+      : never
+    : T[_ToNum<K> & keyof T]
   : T[K & keyof T];
 
 /**
