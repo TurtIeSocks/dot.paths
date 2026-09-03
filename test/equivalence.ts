@@ -11,6 +11,12 @@
  * If an optimization changes the produced type ANYWHERE, one of these asserts
  * stops compiling. This is the regression net that lets us refactor the
  * implementations aggressively.
+ *
+ * One deliberate semantic change is mirrored into the reference: numeric keys
+ * (index signatures `Record<number, V>` and literal keys `{ 0: V }`) now
+ * produce `${number}` / `'0'` paths and resolve through `Get`. Before that
+ * both implementations silently dropped them. The exact results are asserted
+ * in `test/numeric-index.ts`.
  */
 import type { Get, Paths } from '../src/index';
 
@@ -24,11 +30,20 @@ type _LeafRef =
   | null
   | undefined
   | ((...args: never[]) => unknown)
+  | Function
   | Date
   | RegExp
-  | Map<unknown, unknown>
-  | Set<unknown>
-  | Promise<unknown>;
+  | ReadonlyMap<unknown, unknown>
+  | ReadonlySet<unknown>
+  | WeakMap<object, unknown>
+  | WeakSet<object>
+  | WeakRef<object>
+  | Promise<unknown>
+  | ArrayBuffer
+  | SharedArrayBuffer
+  | ArrayBufferView
+  | String
+  | Number;
 
 type _JoinRef<H extends string, T> = [T] extends [never]
   ? never
@@ -39,28 +54,44 @@ type PathsRef<T, _D extends 0[] = []> = _D['length'] extends 8
   : T extends _LeafRef
     ? never
     : T extends readonly unknown[]
-      ?
-          | `${number}`
-          | _JoinRef<`${number}`, PathsRef<NonNullable<T[number]>, [..._D, 0]>>
+      ? T extends readonly []
+        ? never
+        :
+            | `${number}`
+            | _JoinRef<
+                `${number}`,
+                PathsRef<NonNullable<T[number]>, [..._D, 0]>
+              >
       : T extends object
-        ? {
-            [K in keyof T & string]:
-              | K
-              | _JoinRef<K, PathsRef<NonNullable<T[K]>, [..._D, 0]>>;
-          }[keyof T & string]
+        ?
+            | {
+                [K in keyof T & string]:
+                  | K
+                  | _JoinRef<K, PathsRef<NonNullable<T[K]>, [..._D, 0]>>;
+              }[keyof T & string]
+            | {
+                [K in keyof T & number]:
+                  | `${K}`
+                  | _JoinRef<`${K}`, PathsRef<NonNullable<T[K]>, [..._D, 0]>>;
+              }[keyof T & number]
         : never;
 
-type GetRef<T, P extends string> = P extends `${infer H}.${infer R}`
-  ? H extends keyof T
-    ? GetRef<T[H], R>
-    : T extends readonly unknown[]
-      ? GetRef<T[number], R>
-      : never
-  : P extends keyof T
-    ? T[P]
-    : T extends readonly unknown[]
-      ? T[number]
-      : never;
+type GetRef<T, P extends string> = T extends unknown
+  ? P extends `${infer H}.${infer R}`
+    ? H extends keyof T
+      ? GetRef<T[H], R>
+      : _ToNumRef<H> extends keyof T
+        ? GetRef<T[_ToNumRef<H>], R>
+        : never
+    : P extends keyof T
+      ? T[P]
+      : _ToNumRef<P> extends keyof T
+        ? T[_ToNumRef<P>]
+        : never
+  : never;
+// A numeric segment becomes its number; anything else passes through unchanged so
+// the `extends keyof T` test below simply fails again (never would pass it).
+type _ToNumRef<S> = S extends `${infer N extends number}` ? N : S;
 
 // ── Equality machinery ───────────────────────────────────
 type Equal<A, B> =
