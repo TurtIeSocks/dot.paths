@@ -359,8 +359,8 @@ type _ThenableShapes = [
   >,
   Expect<
     Equal<
-      Get<{ t: { then(cb: (v: { a: number }) => void): void } }, 'then'>,
-      never
+      Get<{ t: { then(cb: (v: { a: number }) => void): void } }, 't.then'>,
+      (cb: (v: { a: number }) => void) => void
     >
   >,
 ];
