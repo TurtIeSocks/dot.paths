@@ -55,7 +55,7 @@ The depth cap is what keeps recursive types (linked lists, trees, JSON) from exp
 
 ### `Get<T, P extends string>`
 
-Value type at path `P`. `P` is loosely typed (`string`): this is the fast primitive, use it internally and for one-off lookups. Tail-recursive, so arbitrarily deep paths are fine.
+Value type at path `P`. `P` is loosely typed (`string`): this is the fast primitive, use it internally and for one-off lookups. Tail-recursive, so deep paths are fine up to TypeScript's tail-call limit of 1000 segments.
 
 ### `GetStrict<T, P extends Paths<T>>`
 
