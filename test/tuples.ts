@@ -336,9 +336,24 @@ type _TupleLength = [
 // Intended limitation: loose `Get` reaches Array members that `Paths` never
 // lists (GetStrict rejects them, see the negatives below).
 type _ArrayMembers = [
-  Expect<Equal<Get<{ t: [string, number] }, 't.length'>, 2>>,
-  Expect<Equal<Get<[string, number], 'length'>, 2>>,
-  Expect<Equal<Get<{ t: [] }, 't.length'>, 0>>,
+  Expect<
+    Equal<
+      Get<{ t: [string, number] }, 't.join'>,
+      (separator?: string) => string
+    >
+  >,
+  Expect<
+    Equal<
+      Get<{ t: [string, number] }, 't.pop'>,
+      () => string | number | undefined
+    >
+  >,
+  Expect<
+    Equal<
+      Get<[string, number], 'at'>,
+      (index: number) => string | number | undefined
+    >
+  >,
 ];
 
 // The empty tuple has no element, so it contributes no `${number}` slot at
