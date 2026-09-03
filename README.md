@@ -105,7 +105,7 @@ Known and pinned in `test/`, each a consequence of TypeScript's own rules rather
 - A trailing dot resolves through a string index signature, because `''` is a valid key.
 - Tuples are addressed as `${number}`. An out-of-range literal index resolves to `undefined` and `GetStrict` accepts it. A wide `${number}` segment on a tuple with a rest element gives the fixed elements only; literal indices resolve the rest element.
 - `${number}` also matches decimal strings such as `'0.0'`, so on nested arrays of primitives a path with one segment too many can pass `GetStrict`.
-- Non-canonical numerals (`'007'`, `'1e3'`, `'+1'`) satisfy `${number}`, so `GetStrict` accepts them, and they resolve to `never`: at runtime they are different property keys.
+- Where a path is `${number}` (numeric index signatures, arrays, tuples), non-canonical numerals such as `'007'`, `'1e3'` and `'+1'` satisfy the template, so `GetStrict` accepts them, and they resolve to `never`: at runtime they are different property keys. A numeric literal key `7` only answers to `'7'`, and a string key spelled `'007'` is its own path and resolves as normal.
 - `any` is a wildcard: `Paths<any>` is `string`, and an `any` field emits `${string}` below it.
 - Loose `Get` resolves any structural member, including `length`, array methods and `Map.size`. `GetStrict` never offers them.
 - A wide `${string}` segment on loose `Get` gives the union of matching values on a plain object and `never` through a nullable or union object.
