@@ -710,6 +710,18 @@ type _KnownLimitations = [
     >
   >,
   Expect<Equal<Get<{ t: [Record<number, string>, ...V[]] }, 't.1'>, V>>,
+  // so a sub-path of the rest element resolves by literal index only, even
+  // though `Paths` lists the wide form and `GetStrict` accepts it
+  Expect<
+    Equal<Get<{ t: [Record<number, string>, ...V[]] }, `t.${number}.a`>, never>
+  >,
+  Expect<
+    Equal<
+      GetStrict<{ t: [Record<number, string>, ...V[]] }, `t.${number}.a`>,
+      never
+    >
+  >,
+  Expect<Equal<Get<{ t: [Record<number, string>, ...V[]] }, 't.1.a'>, string>>,
   // An out-of-range tuple index reads as `undefined`, not as a miss, and
   // `t.${number}` lets `GetStrict` accept it.
   Expect<
