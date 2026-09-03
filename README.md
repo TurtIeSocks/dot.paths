@@ -107,7 +107,7 @@ npm run typeperf:ab         # A/B the optimized impl vs a frozen original
 ## How it works (the short version)
 
 - **`Paths`** enumerates string keys, array elements as `${number}`, numeric index signatures (`Record<number, V>`) as `${number}` too, and numeric literal keys (`{ 0: V }`) as `"0"`; string index signatures stay `${string}` only. It gates on `T extends _Leaf` first (primitives, the common case, terminate in one cheap check), drops a redundant `T extends object` guard, uses an O(1) decrement for the depth counter, and keeps `NonNullable` per key (dropping it is faster on flat types but slower on recursive nullable ones).
-- **`Get`** is two branches: split on the first `.`, then resolve the segment with `_Index`. `_Index` is the fused `T[K & keyof T]`. Only when that misses on the whole type does it retry per union member, which is how a path through a nullable, optional or union member (`Partial<Record<K, V>>`, `(A | B)[]`, `[A?]`) resolves to the member's value instead of `never`, and how enum-keyed records resolve by member value. Numeric segments are read as numbers only when they round-trip, so `'007'` is a miss.
+- **`Get`** is two branches: split on the first `.`, then resolve the segment with `_Index`. `_Index` is the fused `T[K & keyof T]`. Only when that misses on the whole type does it retry per union member, which is how a path through a nullable, optional or union member (`Partial<Record<K, V>>`, `(A | B)[]`, `[A?]`) resolves to the member's value instead of `never`, and how enum-keyed records resolve by member value. Numeric segments are read as numbers only when they round-trip, so `'007'` misses a numeric key; a string key spelled `'007'` still resolves.
 
 ## Limitations
 
