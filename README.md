@@ -53,6 +53,17 @@ type Deep = Paths<MyTree, { depth: 12 }> // up to 16
 
 The depth cap is what keeps recursive types (linked lists, trees, JSON) from exploding the compiler: it bounds path length rather than failing.
 
+```ts
+interface Comment {
+  body: string
+  replies: Comment[]
+}
+
+type P = Paths<Comment, { depth: 3 }>
+//   ^? 'body' | 'replies' | `replies.${number}`
+//      | `replies.${number}.body` | `replies.${number}.replies`
+```
+
 ### `Get<T, P extends string>`
 
 Value type at path `P`. `P` is loosely typed (`string`): this is the fast primitive, use it internally and for one-off lookups. Tail-recursive, so deep paths are fine up to TypeScript's tail-call limit of 1000 segments.
@@ -62,6 +73,8 @@ Value type at path `P`. `P` is loosely typed (`string`): this is the fast primit
 Same resolution, but `P` is constrained to `Paths<T>`, so you get path autocomplete and invalid paths become compile errors. The constraint forces a `Paths<T>` computation, so prefer it at API boundaries that want the DX rather than in hot inner code. (If your paths already come from `Paths<T>`, this is effectively free.)
 
 > Note: a naive `Get<T, P extends Paths<T>>` does **not** compile, because the recursive tail can't be proven a sub-path. `GetStrict` is the wrapper that makes it work (strict boundary, loose recursion).
+
+`GetStrict` checks against the default depth. For a deeper cap, wrap it yourself: `type GetDeep<T, P extends Paths<T, { depth: 12 }>> = Get<T, P>`.
 
 ## Performance
 
