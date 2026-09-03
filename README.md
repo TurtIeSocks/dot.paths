@@ -44,7 +44,7 @@ npm i -D dot.paths
 Union of every dot-notation path into `T`.
 
 - Walks objects, arrays (`` `${number}` `` segments), tuples, optionals, nullable unions, and recursive types.
-- Stops at "leaf" values: primitives and their boxed `String`/`Number`, functions and constructors, `Date`, `RegExp`, `Promise`, `Map`/`Set` and their readonly and weak forms, `WeakRef`, typed arrays, `ArrayBuffer`, `SharedArrayBuffer`, `DataView`.
+- Stops at "leaf" values: primitives and their boxed `String` and `Number` (not `Boolean`, whose whole shape is `valueOf(): boolean`), functions and constructors, `Date`, `RegExp`, `Promise`, `Map`/`Set` and their readonly and weak forms, `WeakRef`, typed arrays, `ArrayBuffer`, `SharedArrayBuffer`, `DataView`.
 - **Depth** defaults to `8`. Raise it for deeply nested/recursive types:
 
 ```ts
