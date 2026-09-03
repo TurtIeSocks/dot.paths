@@ -69,12 +69,14 @@ These types are built to be cheap for `tsc`. Highlights from the included benchm
 
 | Workload              | Instantiations |    Check time |
 | --------------------- | -------------: | ------------: |
-| `Get` (resolution)    |        **−5%** |      **−50%** |
-| `Paths` (enumeration) |       **−15%** |           −6% |
-| realistic round-trip  |       **−10%** |      **−40%** |
-| recursive types       |            −2% | no regression |
+| `Get` (resolution)    |        **−4%** |      **−48%** |
+| `Paths` (enumeration) |       **−20%** |           −4% |
+| realistic round-trip  |       **−11%** |      **−36%** |
+| recursive types       |            +1% | no regression |
 
 The `Get` check-time win **grows with type size** (−50% at the benchmark's 2× scale, −60% at 3×), because the core trick, resolving a segment by testing the key intersection `K & keyof T` against `never`, is far cheaper for the checker to relate than a `K extends keyof T` conditional, and never materializes the indexed-access value type on a miss.
+
+Instantiation counts do not predict check time here. One derived helper type (`_Depth`, computed with a template `infer` over seventeen string literals) cost nothing in instantiations and made every `Paths` computation in the program a third slower to check; the interleaved A/B (`npm run typeperf:ab`) is what caught it, so judge a change by that, not by the counters alone.
 
 Correctness is locked: every optimization is proven type-identical to a frozen reference implementation across objects, arrays, tuples, optionals, nullable/discriminated unions, exotic leaves, and recursive types (including self-referential JSON maps), see `test/equivalence.ts`.
 

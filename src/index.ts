@@ -77,14 +77,6 @@ type _Entry<K extends string | number, Sub> = [Sub] extends [never]
 type _Prev = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
 /**
- * Valid `depth` values, derived from `_Prev` so the two never drift: extend the
- * table above and the allowed range follows automatically.
- *
- * `Exclude<keyof _Prev, keyof unknown[]>` yields the tuple's index literals as
- * strings (`'0' | … | '16'`), `_ToNum` turns them into number literals, and `0`
- * is dropped (depth 0 = no paths).
- */
-/**
  * A segment as a number, only when it round-trips: `'7'` is `7` and
  * `` `${number}` `` is `number`, but `'007'`, `'1e3'` and `' 1'` are `never`,
  * since `` `${infer N extends number}` `` alone widens them to `number` and a
@@ -96,7 +88,37 @@ type _ToNum<S> = S extends `${infer N extends number}`
     ? N
     : never
   : never;
-type _Depth = Exclude<_ToNum<Exclude<keyof _Prev, keyof unknown[]>>, 0>;
+
+/**
+ * Valid `depth` values: the indices of `_Prev` that hold a number, so the two
+ * must move together (`test/composition.ts` pins 16 accepted and 17 rejected).
+ *
+ * Written out by hand on purpose. Deriving it with `_ToNum` over
+ * `keyof _Prev` looked free (a few hundred instantiations, once) but made
+ * EVERY later `Paths` computation in the program 25–35% slower to check:
+ * `paths` and `recursive` sat at 1.25–1.35× the frozen original's check time
+ * with fewer instantiations, and dropped to 0.96× and 1.02× with this literal
+ * union. A single `_ToNum<'3'>` does not trigger it; the seventeen-member
+ * union does (TS 5.9.3). Instantiation counts never showed it, only the
+ * interleaved A/B did.
+ */
+type _Depth =
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13
+  | 14
+  | 15
+  | 16;
 
 /** Options accepted by {@link Paths}. */
 export interface PathsOptions {
